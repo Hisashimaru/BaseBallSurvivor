@@ -1,0 +1,12 @@
+*.exe
+*.d
+*.wasm
+*.js
+*.tsx
+
+_data/
+.vscode/
+
+index.data
+index.zip
+index.html
