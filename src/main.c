@@ -8,19 +8,17 @@
 #ifdef PLATFORM_WEB
     #include <emscripten/emscripten.h>
 	#define GLSL_VERSION 100
-	#define SCREEN_WDITH 720*0.6
-	#define SCREEN_HEIGHT 960*0.6
 	//is_web = true;
 #else
 	#define GLSL_VERSION 330
-	#define SCREEN_WDITH 720
-	#define SCREEN_HEIGHT 960
 #endif
 
 #define loopi(c) for(int i=0; i<c; i++)
 #define loopj(c) for(int j=0; j<c; j++)
 #define loopk(c) for(int k=0; k<c; k++)
 
+#define SCREEN_WDITH 720
+#define SCREEN_HEIGHT 960
 #define GAME_WIDTH	240
 #define GAME_HEIGHT	320
 
@@ -172,6 +170,7 @@ typedef struct
 	int swingTime;
 	bool isHit;
 	bool isDead;
+	bool swingRequest;
 } Player;
 Player player = {0};
 
@@ -198,8 +197,9 @@ void player_init()
 			.width = 32,
 			.height= 32,
 			.animations = {
-				[0] = {.start=0, .count=1, .wait = 6},
-				[1] = {.start=1, .count=6, .wait = 4}
+				[0] = {.start=0, .count=1, .wait = 6},	// Idle
+				[1] = {.start=1, .count=6, .wait = 4},
+				[2] = {.start=7, .count=4, .wait = 2, .loop=true}	// Walking
 			}
 		},
 	};
@@ -269,11 +269,33 @@ void player_update()
 		}
 	}
 
+	// Walking animation
+	if(move.x != 0.0f || move.y != 0.0f)
+	{
+		if(player.sprite.currentAnimation == 0)
+		{
+			sprite_play(&player.sprite, 2);
+		}
+	}
+	else if(player.sprite.currentAnimation == 2)
+	{
+		// Stop walk animation
+		sprite_play(&player.sprite, 0);
+	}
+
 	// Swing
-	if(sprite_is_end(player.sprite) && (IsMouseButtonPressed(0) || IsKeyPressed(KEY_SPACE)))
+	if((IsMouseButtonPressed(0) || IsKeyPressed(KEY_SPACE)))
+	{
+		if(!(player.sprite.frame > 0 && player.sprite.frame < 4))	// Stop swing request with double clicking
+		{
+			player.swingRequest = true;
+		}
+	}
+	if(player.swingRequest && (player.sprite.currentAnimation == 2 || sprite_is_end(player.sprite)))
 	{
 		sprite_play(&player.sprite, 1);
 		PlaySoundMulti(snd_swing);
+		player.swingRequest = false;
 	}
 
 	// Check swing hits
